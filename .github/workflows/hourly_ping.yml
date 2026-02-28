@@ -3,7 +3,7 @@ name: Hourly Ntfy Ping
 on:
   schedule:
     # This cron syntax means: "At minute 0 past every hour"
-    - cron: '0 * * * *'
+    - cron: '35 * * * *'
   
   # This lets you click "Run workflow" in GitHub to test it immediately
   workflow_dispatch: 
