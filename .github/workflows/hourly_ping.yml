@@ -1,0 +1,32 @@
+name: Hourly Ntfy Ping
+
+on:
+  schedule:
+    # This cron syntax means: "At minute 0 past every hour"
+    - cron: '0 * * * *'
+  
+  # This lets you click "Run workflow" in GitHub to test it immediately
+  workflow_dispatch: 
+
+jobs:
+  run-hourly-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Using your preferred Python version
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Installing tzdata is a good safety measure for zoneinfo on Linux servers
+          pip install requests tzdata
+
+      - name: Run the script
+        run: python main.py
