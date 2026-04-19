@@ -1,0 +1,71 @@
+name: Download Website as ZIP
+
+on:
+  workflow_dispatch:
+    inputs:
+      website_url:
+        description: 'Website URL to download (e.g., https://example.com)'
+        required: true
+        type: string
+        default: 'https://example.com'
+      max_pages:
+        description: 'Maximum number of pages to crawl'
+        required: false
+        type: string
+        default: '100'
+      threads:
+        description: 'Number of concurrent download threads'
+        required: false
+        type: string
+        default: '8'
+      destination_folder:
+        description: 'Name for the downloaded site folder (and ZIP file)'
+        required: false
+        type: string
+        default: 'downloaded_site'
+
+jobs:
+  download-and-zip:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout your repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Clone the website-downloader tool
+        run: |
+          git clone https://github.com/PKHarsimran/website-downloader.git
+          cd website-downloader
+
+      - name: Install website-downloader dependencies
+        run: |
+          cd website-downloader
+          pip install -r requirements.txt
+
+      - name: Download website
+        run: |
+          cd website-downloader
+          python website-downloader.py \
+            --url "${{ github.event.inputs.website_url }}" \
+            --destination "../${{ github.event.inputs.destination_folder }}" \
+            --max-pages "${{ github.event.inputs.max_pages }}" \
+            --threads "${{ github.event.inputs.threads }}"
+
+      - name: Zip the downloaded site
+        run: |
+          zip -r "${{ github.event.inputs.destination_folder }}.zip" "${{ github.event.inputs.destination_folder }}"
+
+      - name: Commit and push ZIP file
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "💾 Archive website: ${{ github.event.inputs.website_url }}"
+          file_pattern: "${{ github.event.inputs.destination_folder }}.zip"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
