@@ -1,0 +1,82 @@
+name: Download Website with HTTrack
+
+on:
+  workflow_dispatch:
+    inputs:
+      website_url:
+        description: 'Website URL to mirror (e.g., https://example.com)'
+        required: true
+        type: string
+        default: 'https://example.com'
+      project_name:
+        description: 'Project name (used for folder and ZIP file)'
+        required: false
+        type: string
+        default: 'mirrored_site'
+      options:
+        description: 'Additional HTTrack options (see httrack --help)'
+        required: false
+        type: string
+        default: '-%v -r5 -c1'
+
+jobs:
+  mirror-and-zip:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install HTTrack
+        run: sudo apt-get update && sudo apt-get install -y httrack
+
+      - name: Create output directory
+        run: mkdir -p "${{ github.event.inputs.project_name }}_output"
+
+      - name: Run HTTrack to mirror website
+        run: |
+          cd "${{ github.event.inputs.project_name }}_output"
+          # HTTrack command: mirrors the site into a subdirectory named after the project
+          httrack "${{ github.event.inputs.website_url }}" \
+            -O "${{ github.event.inputs.project_name }}" \
+            ${{ github.event.inputs.options }} \
+            --display
+
+      - name: Debug - List downloaded contents
+        run: |
+          echo "Current working directory:"
+          pwd
+          echo "Contents of output folder:"
+          ls -la "${{ github.event.inputs.project_name }}_output"
+          echo "Contents of mirrored site folder (if exists):"
+          ls -la "${{ github.event.inputs.project_name }}_output/${{ github.event.inputs.project_name }}" || echo "Mirror folder not found!"
+
+      - name: Verify mirror folder exists before zipping
+        id: check_folder
+        run: |
+          MIRROR_DIR="${{ github.event.inputs.project_name }}_output/${{ github.event.inputs.project_name }}"
+          if [ -d "$MIRROR_DIR" ]; then
+            echo "✅ Mirror folder found: $MIRROR_DIR"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Mirror folder NOT found at $MIRROR_DIR"
+            echo "exists=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Zip the mirrored site
+        if: steps.check_folder.outputs.exists == 'true'
+        run: |
+          cd "${{ github.event.inputs.project_name }}_output"
+          zip -r "../${{ github.event.inputs.project_name }}.zip" "${{ github.event.inputs.project_name }}"
+
+      - name: Commit and push ZIP file
+        if: steps.check_folder.outputs.exists == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "💾 Mirror website: ${{ github.event.inputs.website_url }}"
+          file_pattern: "${{ github.event.inputs.project_name }}.zip"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
