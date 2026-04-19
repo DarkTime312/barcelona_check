@@ -1,0 +1,41 @@
+name: Scrape Reddit via API
+
+on:
+  workflow_dispatch: # Allows you to run this manually from the Actions tab
+
+jobs:
+  scrape-reddit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to push the zip file back to the repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install praw
+
+      - name: Run Reddit Scraper
+        env:
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          # Reddit requires a descriptive User-Agent. Replace 'YourUsername' with your actual Reddit username.
+          REDDIT_USER_AGENT: "GH_Action_Scraper:v1.0 (by /u/YourUsername)" 
+        run: python scrape_reddit.py
+
+      - name: Zip the JSON data
+        run: zip scraped_data.zip reddit_data.json
+
+      - name: Commit and Push zip file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scraped_data.zip
+          git commit -m "Update scraped Reddit data" || true
+          git push
