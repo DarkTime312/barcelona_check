@@ -23,5 +23,5 @@ for submission in subreddit.hot(limit=10):
     })
 
 # Save to a JSON file
-with open("reddit_data.json", "w", encoding="utf-8") as f:
+with open("barca_data.json", "w", encoding="utf-8") as f:
     json.dump(data, f, indent=4)
