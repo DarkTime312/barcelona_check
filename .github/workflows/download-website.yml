@@ -61,7 +61,8 @@ jobs:
             --url "${{ github.event.inputs.website_url }}" \
             --destination "$GITHUB_WORKSPACE/${{ steps.vars.outputs.folder }}" \
             --max-pages "${{ github.event.inputs.max_pages }}" \
-            --threads "${{ github.event.inputs.threads }}"
+            --threads "${{ github.event.inputs.threads }}" \
+            --download-external-assets
 
       - name: Debug - Show downloaded files
         run: |
