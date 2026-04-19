@@ -1,0 +1,56 @@
+name: Download CodePen
+
+on:
+  workflow_dispatch:
+    inputs:
+      codepen_url:
+        description: 'The CodePen URL (e.g., https://codepen.io/username/pen/MxYbBJ)'
+        required: true
+        type: string
+      output_folder:
+        description: 'Directory name to save the files into'
+        required: true
+        default: 'codepen-downloads/my-pen'
+        type: string
+
+jobs:
+  download-and-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to push the commit back
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download CodePen using CLI tool
+        run: |
+          # Assuming the tool is published to npm as 'codepen-downloader'
+          # This runs the CLI without needing to permanently install it
+          npx codepen-downloader "${{ github.event.inputs.codepen_url }}" "${{ github.event.inputs.output_folder }}"
+          
+          # NOTE: If the tool is NOT published on npm, replace the above line with:
+          # git clone https://github.com/gerkirill/codepen-downloader.git temp-tool
+          # cd temp-tool
+          # npm install
+          # npm run dev -- "${{ github.event.inputs.codepen_url }}" "../${{ github.event.inputs.output_folder }}"
+          # cd ..
+          # rm -rf temp-tool
+
+      - name: Commit and Push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Add the newly created folder
+          git add "${{ github.event.inputs.output_folder }}"
+          
+          # Commit only if there are new files, otherwise skip
+          git commit -m "Download CodePen: ${{ github.event.inputs.codepen_url }}" || true
+          
+          git push
