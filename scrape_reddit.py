@@ -10,7 +10,7 @@ reddit = praw.Reddit(
 )
 
 # Example: Fetch the top 10 "hot" posts from a specific subreddit
-subreddit = reddit.subreddit("javascript") # Change to whatever you want
+subreddit = reddit.subreddit("barca") # Change to whatever you want
 data = []
 
 for submission in subreddit.hot(limit=10):
