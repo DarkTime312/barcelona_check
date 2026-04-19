@@ -5,7 +5,7 @@ from praw.models import Comment, Submission
 
 # --- Configuration ---
 SUBREDDIT_NAME = "Barca"          # Change as needed, or use env var
-POST_LIMIT = 20
+POST_LIMIT = 10
 OUTPUT_HTML = "reddit_feed.html"
 
 # Reddit API credentials from environment
@@ -17,7 +17,7 @@ reddit = praw.Reddit(
 
 def fetch_top_posts(subreddit_name: str, limit: int):
     subreddit = reddit.subreddit(subreddit_name)
-    return list(subreddit.top(limit=limit))  # default time filter = day
+    return list(subreddit.hot(limit=limit))  # default time filter = day
 
 def build_comment_tree(comment_list):
     """Convert a list of praw Comments into a nested structure for HTML rendering."""
