@@ -1,4 +1,4 @@
-name: Scrape Reddit
+name: Scrape Reddit to Artifact
 
 on:
   workflow_dispatch:
@@ -8,26 +8,21 @@ on:
         required: true
         default: 'https://old.reddit.com/r/webdev/'
 
-permissions:
-  contents: write
-
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  scrape:
+  scrape-and-upload:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Scrape the website with advanced headers
+      - name: Scrape the website
         run: |
           mkdir -p scraped_page
           cd scraped_page
-          rm -rf *
           
-          # Using advanced headers to mimic a real Firefox browser
           wget -p -k -E \
             --header="Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8" \
             --header="Accept-Language: en-US,en;q=0.5" \
@@ -41,10 +36,15 @@ jobs:
             -U "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0" \
             "${{ github.event.inputs.url }}" || true
 
-      - name: Commit and push changes
+      - name: Zip the scraped files
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add scraped_page/
-          
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Scraped: ${{ github.event.inputs.url }}" && git push)
+          # Go back to root workspace to zip the folder
+          cd ${{ github.workspace }}
+          zip -r scraped_data.zip scraped_page/
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraped-website-files
+          path: scraped_data.zip
+          retention-days: 7
