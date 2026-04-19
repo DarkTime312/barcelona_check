@@ -4,22 +4,22 @@ on:
   workflow_dispatch:
     inputs:
       website_url:
-        description: 'Website URL to download (e.g., https://example.com)'
+        description: 'Website URL to download'
         required: true
         type: string
         default: 'https://example.com'
       max_pages:
-        description: 'Maximum number of pages to crawl'
+        description: 'Max pages to crawl'
         required: false
         type: string
         default: '100'
       threads:
-        description: 'Number of concurrent download threads'
+        description: 'Concurrent threads'
         required: false
         type: string
         default: '8'
       destination_folder:
-        description: 'Name for the downloaded site folder (and ZIP file)'
+        description: 'Base name for folder/ZIP'
         required: false
         type: string
         default: 'downloaded_site'
@@ -31,7 +31,7 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout your repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -39,33 +39,44 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Clone the website-downloader tool
-        run: |
-          git clone https://github.com/PKHarsimran/website-downloader.git
-          cd website-downloader
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y wget curl
 
-      - name: Install website-downloader dependencies
+      - name: Clone website-downloader
+        run: git clone https://github.com/PKHarsimran/website-downloader.git
+
+      - name: Install Python dependencies
         run: |
           cd website-downloader
           pip install -r requirements.txt
+
+      - name: Generate unique folder name
+        id: vars
+        run: echo "folder=${{ github.event.inputs.destination_folder }}-$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
 
       - name: Download website
         run: |
           cd website-downloader
           python website-downloader.py \
             --url "${{ github.event.inputs.website_url }}" \
-            --destination "../${{ github.event.inputs.destination_folder }}" \
+            --destination "$GITHUB_WORKSPACE/${{ steps.vars.outputs.folder }}" \
             --max-pages "${{ github.event.inputs.max_pages }}" \
             --threads "${{ github.event.inputs.threads }}"
 
+      - name: Debug - Show downloaded files
+        run: |
+          echo "Workspace contents:"
+          ls -la "$GITHUB_WORKSPACE"
+          echo "Downloaded folder contents:"
+          ls -la "$GITHUB_WORKSPACE/${{ steps.vars.outputs.folder }}" || echo "Folder missing!"
+
       - name: Zip the downloaded site
         run: |
-          zip -r "${{ github.event.inputs.destination_folder }}.zip" "${{ github.event.inputs.destination_folder }}"
+          cd "$GITHUB_WORKSPACE"
+          zip -r "${{ steps.vars.outputs.folder }}.zip" "${{ steps.vars.outputs.folder }}"
 
-      - name: Commit and push ZIP file
+      - name: Commit and push ZIP
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "💾 Archive website: ${{ github.event.inputs.website_url }}"
-          file_pattern: "${{ github.event.inputs.destination_folder }}.zip"
-          commit_user_name: "github-actions[bot]"
-          commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
+          file_pattern: "${{ steps.vars.outputs.folder }}.zip"
