@@ -26,7 +26,7 @@ jobs:
           REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           # Reddit requires a descriptive User-Agent. Replace 'YourUsername' with your actual Reddit username.
-          REDDIT_USER_AGENT: "GH_Action_Scraper:v1.0 (by /u/YourUsername)" 
+          REDDIT_USER_AGENT: "GH_Action_Scraper:v1.0 (by /u/birjand_1371)" 
         run: python scrape_reddit.py
 
       - name: Zip the JSON data
