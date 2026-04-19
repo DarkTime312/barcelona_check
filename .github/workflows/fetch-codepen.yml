@@ -1,0 +1,40 @@
+name: Fetch CodePen Source
+
+on:
+  workflow_dispatch:
+    inputs:
+      codepen_url:
+        description: 'CodePen URL'
+        required: true
+        type: string
+        default: 'https://codepen.io/username/pen/abc123'
+
+jobs:
+  fetch-codepen:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install codepen-fetcher
+        run: npm install codepen-fetcher
+
+      - name: Fetch CodePen source
+        run: node fetch_codepen.js "${{ github.event.inputs.codepen_url }}"
+
+      - name: Commit and push files
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: '📦 Add CodePen export'
+          file_pattern: 'codepen_export/*'
+          commit_user_name: 'github-actions[bot]'
+          commit_user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
