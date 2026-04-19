@@ -1,43 +1,44 @@
-name: Fetch and Save HTML
+name: Scrape Single Webpage
 
 on:
-  # Run manually from the Actions tab
   workflow_dispatch:
-  # OR run automatically every day at midnight UTC (uncomment below)
-  # schedule:
-  #   - cron: '0 0 * * *'
+    inputs:
+      url:
+        description: 'URL to scrape'
+        required: true
+        default: 'https://old.reddit.com/r/Barca/'
+
+permissions:
+  contents: write
 
 jobs:
-  update-html:
+  scrape:
     runs-on: ubuntu-latest
-
-    # Grant permissions needed to push back to the repo
-    permissions:
-      contents: write
-
     steps:
-      # 1. Check out the repository
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Download the HTML page using wget
-      - name: Download HTML page
+      - name: Scrape the website
         run: |
-          # Replace the URL with the actual page you want to download
-          wget -O downloaded-page.html https://thecascade.dev/learning-paths
+          # Create a directory for the output
+          mkdir -p scraped_page
+          cd scraped_page
+          
+          # Clean previous scrapes if you only want the latest one kept
+          rm -rf *
+          
+          # Download the page
+          # -p : Download page requisites (CSS, images)
+          # -k : Convert links to work locally
+          # -E : Add .html extension to the file
+          # -U : Use a standard browser User-Agent so sites like Reddit don't block the request
+          wget -p -k -E -U "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" "${{ github.event.inputs.url }}"
 
-      # 3. Commit and push the file if it has changed
-      - name: Commit and Push changes
+      - name: Commit and push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add downloaded-page.html
-
-          # Only commit and push if there are changes
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Automated update of downloaded-page.html"
-            git push
-          fi
+          git add scraped_page/
+          
+          # Check if there are changes to commit. If yes, commit and push.
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Scraped: ${{ github.event.inputs.url }}" && git push)
