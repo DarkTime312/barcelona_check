@@ -1,0 +1,58 @@
+name: Download YouTube Video
+
+on:
+  workflow_dispatch:
+    inputs:
+      youtube_url:
+        description: 'YouTube Video URL'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  download_and_commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg rar
+          pipx install yt-dlp
+
+      - name: Download Video (1080p or below)
+        run: |
+          # Uses yt-dlp to grab the best video <= 1080p plus best audio, merged into mp4
+          yt-dlp -f "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best" \
+                 --merge-output-format mp4 \
+                 -o "downloaded_video.mp4" \
+                 "${{ inputs.youtube_url }}"
+
+      - name: RAR and Split the Video
+        run: |
+          # 'a' adds to archive, '-v99m' splits into 99MB parts to bypass GitHub's 100MB limit
+          rar a -v99m video_archive.rar downloaded_video.mp4
+          
+          # Remove the raw mp4 to save runner disk space
+          rm downloaded_video.mp4 
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Add all split rar parts (e.g., video_archive.part01.rar, video_archive.part02.rar)
+          git add video_archive*.rar
+          
+          # Only commit and push if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Add downloaded video (split RAR) from ${{ inputs.youtube_url }}"
+            git push
+          fi
