@@ -1,0 +1,3 @@
+date	size'/'remotesize	flags(request:Update,Range state:File response:Modified,Chunked,gZipped)	statuscode	status ('servermsg')	MIME	Etag|Date	URL	localfile	(from URL)
+22:50:09	56/56	---M--	301	error ('Moved%20Permanently')	text/plain	date:Sun,%2019%20Apr%202026%2022:50:08%20GMT	http://courses.thecascade.dev/robots.txt		(from )
+22:50:09	46/46	---M--	301	error ('Moved%20Permanently')	text/plain	date:Sun,%2019%20Apr%202026%2022:50:09%20GMT	http://courses.thecascade.dev/	mirrored_site/courses.thecascade.dev/index.html	(from )
