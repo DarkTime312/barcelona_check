@@ -1,0 +1,43 @@
+name: Scrape Post Comments
+
+on:
+  workflow_dispatch:
+    inputs:
+      post_url:
+        description: 'Reddit post URL'
+        required: true
+        type: string
+
+jobs:
+  scrape-comments:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install praw
+
+      - name: Run comment scraper
+        env:
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_USER_AGENT: "GH_Action_Comments:v1.0 (by /u/birjand_1371)"
+          POST_URL: ${{ github.event.inputs.post_url }}
+        run: python scrape_post_comments.py
+
+      - name: Commit and Push HTML file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add post_comments.html
+          git commit -m "Update post comments HTML" || true
+          git push
