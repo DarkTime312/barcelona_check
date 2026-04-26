@@ -6,7 +6,7 @@ import praw
 # --- Configuration ---
 OUTPUT_HTML = "post_comments.html"
 # How many top-level comments to keep (set to None for all)
-TOP_COMMENTS_LIMIT = 60
+TOP_COMMENTS_LIMIT = 100
 
 # --- Reddit API init ---
 reddit = praw.Reddit(
