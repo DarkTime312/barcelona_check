@@ -6,7 +6,7 @@ import praw
 # --- Configuration ---
 OUTPUT_HTML = "post_comments.html"
 # How many top-level comments to keep (set to None for all)
-TOP_COMMENTS_LIMIT = 20
+TOP_COMMENTS_LIMIT = 30
 
 # --- Reddit API init ---
 reddit = praw.Reddit(
@@ -36,21 +36,25 @@ def extract_submission_id(url: str) -> str:
 def fetch_top_level_top_comments(post_url: str, limit=None):
     """Return top-level comments sorted by score (top), limited to `limit`."""
     submission = reddit.submission(url=post_url)
-    # Sort by "top" before expanding
+    
+    # Set sort to "top" BEFORE comments are fetched
     submission.comment_sort = "top"
-    # Expand all MoreComments to get full list
-    submission.comments.replace_more(limit=None)
+    
+    # limit=0 removes all "MoreComments" objects instead of fetching them.
+    # Because Reddit's default payload already includes a large batch of the 
+    # top-level comments, we don't need to make extra API calls for the top 30.
+    submission.comments.replace_more(limit=0)
 
-    all_comments = submission.comments.list()
-    # Keep only top-level comments (parent is the submission itself)
-    top_level = [c for c in all_comments if c.parent_id == submission.fullname]
+    # Iterating directly over `submission.comments` (instead of .list()) 
+    # yields ONLY top-level comments.
+    top_level = []
+    for comment in submission.comments:
+        top_level.append(comment)
+        if limit and len(top_level) >= limit:
+            break
 
-    # They are already in "top" order thanks to comment_sort,
-    # but we can sort explicitly by score descending to be safe.
+    # Optional: explicitly sort just in case, though Reddit API returns them sorted
     top_level.sort(key=lambda c: c.score, reverse=True)
-
-    if limit:
-        top_level = top_level[:limit]
 
     return submission, top_level
 
