@@ -1,54 +1,27 @@
 name: Download v2rayN Release
 
 on:
-  workflow_dispatch:         # allows manual trigger
-  schedule:
-    - cron: '0 0 * * 0'      # optional: run weekly (adjust as needed)
+  workflow_dispatch:
 
 jobs:
   download-and-commit:
     runs-on: ubuntu-latest
     permissions:
-      contents: write          # needed to push commits
+      contents: write
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Download v2rayN asset
+      - name: Download file
         run: |
           mkdir -p assets
-          curl -L -o assets/v2rayN-windows-64-desktop.zip \
+          curl -L --fail -o assets/v2rayN-windows-64-desktop.zip \
             https://github.com/2dust/v2rayN/releases/download/7.20.4/v2rayN-windows-64-desktop.zip
 
-      - name: Compute checksum of downloaded file
-        id: checksum
+      - name: Commit and push
         run: |
-          echo "hash=$(sha256sum assets/v2rayN-windows-64-desktop.zip | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-
-      - name: Check if file changed (compare with existing checksum)
-        id: check-change
-        run: |
-          if [ -f "assets/v2rayN-windows-64-desktop.zip.sha256" ]; then
-            old_hash=$(cat assets/v2rayN-windows-64-desktop.zip.sha256)
-            if [ "$old_hash" == "${{ steps.checksum.outputs.hash }}" ]; then
-              echo "changed=false" >> $GITHUB_OUTPUT
-              echo "No change in the release file."
-            else
-              echo "changed=true" >> $GITHUB_OUTPUT
-            fi
-          else
-            # No previous checksum file -> treat as changed
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Commit and push (if changed)
-        if: steps.check-change.outputs.changed == 'true'
-        run: |
-          # Save current checksum for next run
-          echo "${{ steps.checksum.outputs.hash }}" > assets/v2rayN-windows-64-desktop.zip.sha256
-
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add assets/v2rayN-windows-64-desktop.zip assets/v2rayN-windows-64-desktop.zip.sha256
-          git commit -m "Update v2rayN Windows 64-bit release (7.20.4)"
+          git add assets/v2rayN-windows-64-desktop.zip
+          git commit -m "Update v2rayN 7.20.4" || echo "No changes to commit"
           git push
